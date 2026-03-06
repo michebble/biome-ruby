@@ -1,0 +1,21 @@
+#! /usr/bin/env ruby
+# frozen_string_literal: true
+
+# because rubygems shims assume a gem's executables are Ruby
+
+require 'biome/ruby'
+
+begin
+  command = [Biome::Ruby.executable, *ARGV]
+  puts command.inspect
+  if Gem.win_platform?
+    # use system rather than exec as exec inexplicably fails to find the executable on Windows
+    # see related https://github.com/rubys/sprockets-esbuild/pull/4
+    system(*command, exception: true)
+  else
+    exec(*command)
+  end
+rescue Biome::Ruby::UnsupportedPlatformException, Biome::Ruby::ExecutableNotFoundException => e
+  warn("ERROR: #{e.message}")
+  exit 1
+end
