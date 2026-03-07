@@ -1,3 +1,5 @@
+inherit_from: .rubocop_todo.yml
+
 # yaml-language-server: $schema=https://www.rubyschema.org//rubocop.json
 
 # The behavior of RuboCop can be controlled via the .rubocop.yml
@@ -19,3 +21,6 @@ AllCops:
   NewCops: enable
   Exclude:
     - pkg/**/*
+
+Style/Documentation:
+  Enabled: false
