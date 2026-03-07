@@ -15,7 +15,7 @@ plugins:
   - rubocop-minitest
 
 AllCops:
-  TargetRubyVersion: 3.4
+  TargetRubyVersion: 3.0
   NewCops: enable
   Exclude:
     - pkg/**/*
