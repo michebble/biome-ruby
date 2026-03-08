@@ -57,12 +57,14 @@
 #
 require 'rubygems/package_task'
 require 'open-uri'
+require 'json'
 require_relative '../lib/biome/ruby/upstream'
 
 def biome_download_url(filename)
   "https://github.com/biomejs/biome/releases/download/@biomejs/biome@#{Biome::Ruby::Upstream::VERSION}/#{filename}"
 end
 
+RELEASE_METADATA_URL = "https://api.github.com/repos/biomejs/biome/releases/tags/@biomejs/biome@#{Biome::Ruby::Upstream::VERSION}".freeze
 BIOME_RUBY_GEMSPEC = Bundler.load_gemspec('biome-ruby.gemspec')
 
 # prepend the download task before the Gem::PackageTask tasks
@@ -102,37 +104,29 @@ Biome::Ruby::Upstream::NATIVE_PLATFORMS.each do |platform, filename|
   end
 end
 
-# need to figure this out
-# desc 'Validate checksums for biome binaries'
-# task 'check' => exepaths do
-#   sha_filename = File.absolute_path("../package/biome-#{Biome::Ruby::Upstream::VERSION}-checksums.txt",
-#                                     __dir__)
-#   sha_url = if File.exist?(sha_filename)
-#               sha_filename
-#             else
-#               biome_download_url('sha256sums.txt')
-#             end
-#   gemspec = BIOME_RUBY_GEMSPEC
+desc 'Validate checksums for biome binaries'
+task 'check' => exepaths do
+  gemspec = BIOME_RUBY_GEMSPEC
+  metadata_uri = URI.parse(RELEASE_METADATA_URL)
+  checksums = JSON.parse(metadata_uri.read).fetch('assets').to_h do |asset|
+    checksum = asset['digest'].delete_prefix('sha256:')
+    [asset['name'], checksum]
+  end
 
-#   checksums = URI.open(sha_url).each_line.to_h do |line|
-#     checksum, file = line.split
-#     [File.basename(file), checksum]
-#   end
+  Biome::Ruby::Upstream::NATIVE_PLATFORMS.each do |platform, filename|
+    exedir = File.join(gemspec.bindir, platform) # "exe/x86_64-linux"
+    exepath = File.join(exedir, 'biome') # "exe/x86_64-linux/biome"
 
-#   Biome::Ruby::Upstream::NATIVE_PLATFORMS.each do |platform, filename|
-#     exedir = File.join(gemspec.bindir, platform) # "exe/x86_64-linux"
-#     exepath = File.join(exedir, 'biome') # "exe/x86_64-linux/biome"
+    local_sha256 = Digest::SHA256.file(exepath).hexdigest
+    remote_sha256 = checksums.fetch(filename)
 
-#     local_sha256 = Digest::SHA256.file(exepath).hexdigest
-#     remote_sha256 = checksums.fetch(filename)
-
-#     if local_sha256 == remote_sha256
-#       puts "Checksum OK for #{exepath} (#{local_sha256})"
-#     else
-#       abort "Checksum mismatch for #{exepath} (#{local_sha256} != #{remote_sha256})"
-#     end
-#   end
-# end
+    if local_sha256 == remote_sha256
+      puts "Checksum OK for #{exepath} (#{local_sha256})"
+    else
+      abort "Checksum mismatch for #{exepath} (#{local_sha256} != #{remote_sha256})"
+    end
+  end
+end
 
 desc 'Download all biome binaries'
 task 'download' => :check
