@@ -1,5 +1,5 @@
-## [Unreleased]
+# biome-ruby changelog
 
-## [2.4.6] - 2026-03-06
+## [2.4.6]
 
 - Initial release
