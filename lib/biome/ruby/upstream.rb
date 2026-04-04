@@ -3,7 +3,7 @@
 module Biome
   module Ruby
     module Upstream
-      VERSION = '2.4.9'
+      VERSION = '2.4.10'
 
       # rubygems platform name => upstream release filename
       NATIVE_PLATFORMS = {
