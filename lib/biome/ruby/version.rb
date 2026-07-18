@@ -2,6 +2,6 @@
 
 module Biome
   module Ruby
-    VERSION = '2.5.3'
+    VERSION = '2.5.4'
   end
 end
