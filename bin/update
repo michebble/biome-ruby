@@ -1,0 +1,84 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+root = File.expand_path('..', __dir__)
+version = ARGV[0]
+
+unless ARGV.size == 1 && version.match?(/\A\d+\.\d+\.\d+(?:\.\d+)?\z/)
+  warn 'Usage: bin/update VERSION'
+  exit 1
+end
+
+replacements = {
+  'lib/biome/ruby/version.rb' => [/VERSION = '[^']+'/, "VERSION = '#{version}'"],
+  'lib/biome/ruby/upstream.rb' => [/VERSION = '[^']+'/, "VERSION = '#{version}'"]
+}
+
+branch = "deps/bump-version-to-#{version}"
+needle = "VERSION = '#{version}'"
+version_is_current = replacements.keys.all? { |relative| File.read(File.join(root, relative)).include?(needle) }
+version_is_current &&= File.read(File.join(root, 'CHANGELOG.md')).include?("## [#{version}]")
+
+if version_is_current
+  puts "Version is #{version}"
+  exit 0
+end
+
+abort "Could not create #{branch}" unless system('git', '-C', root, 'switch', '-c', branch)
+
+changed = []
+
+replacements.each do |relative, (pattern, replacement)|
+  path = File.join(root, relative)
+  original = File.read(path)
+  updated = original.sub(pattern, replacement)
+  unless updated.include?(replacement)
+    warn "Could not update #{relative}"
+    exit 1
+  end
+  next if original == updated
+
+  File.write(path, updated)
+  changed << relative
+  puts "Updated #{relative}"
+end
+
+if changed.include?('lib/biome/ruby/version.rb')
+  lock_path = File.join(root, 'Gemfile.lock')
+  lock_before = File.read(lock_path)
+  abort 'bundle lock failed' unless system('bundle', 'lock', chdir: root)
+
+  if File.read(lock_path) != lock_before
+    changed << 'Gemfile.lock'
+    puts 'Updated Gemfile.lock'
+  end
+end
+
+changelog_path = File.join(root, 'CHANGELOG.md')
+changelog = File.read(changelog_path)
+heading = "## [#{version}]"
+
+unless changelog.include?(heading)
+  url = "https://github.com/biomejs/biome/releases/tag/%40biomejs%2Fbiome%40#{version}"
+  entry = <<~ENTRY
+    ## [#{version}]
+
+    - Update to [Biome CLI v#{version}](#{url})
+
+  ENTRY
+  marker = "# biome-ruby changelog\n\n"
+  abort 'CHANGELOG.md header was not found' unless changelog.start_with?(marker)
+
+  File.write(changelog_path, changelog.sub(marker, "#{marker}#{entry}"))
+  changed << 'CHANGELOG.md'
+  puts 'Updated CHANGELOG.md'
+end
+
+if changed.empty?
+  puts "Version is #{version}"
+  exit 0
+end
+
+message = "dep: update to Biome CLI v#{version}"
+exit 1 unless system('git', '-C', root, 'add', '--', *changed)
+exit 1 unless system('git', '-C', root, 'commit', '-m', message, '--', *changed)
