@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'English'
+require_relative '../lib/biome/ruby/version'
+require_relative '../lib/biome/ruby/upstream'
+
+Dir.chdir(File.expand_path('..', __dir__))
+
+version = Biome::Ruby::VERSION
+packages = ["biome-ruby-#{version}.gem"]
+packages += Biome::Ruby::Upstream::NATIVE_PLATFORMS.keys.map { |platform| "biome-ruby-#{version}-#{platform}.gem" }
+
+packages.each do |package|
+  path = "pkg/#{package}"
+  puts "gem push #{path}"
+  next if system('gem', 'push', path)
+
+  exit($CHILD_STATUS&.exitstatus || 1)
+end
