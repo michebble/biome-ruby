@@ -1,5 +1,9 @@
 # biome-ruby changelog
 
+## [2.5.14]
+
+- Update to [Biome CLI v2.5.14](https://github.com/biomejs/biome/releases/tag/%40biomejs%2Fbiome%402.5.14)
+
 ## [2.5.13]
 
 - Update to [Biome CLI v2.5.13](https://github.com/biomejs/biome/releases/tag/%40biomejs%2Fbiome%402.5.13)
