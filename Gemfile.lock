@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    biome-ruby (2.5.14)
+    biome-ruby (2.5.15)
 
 GEM
   remote: https://rubygems.org/
