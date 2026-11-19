@@ -13,8 +13,13 @@ packages += Biome::Ruby::Upstream::NATIVE_PLATFORMS.keys.map { |platform| "biome
 
 packages.each do |package|
   path = "pkg/#{package}"
-  puts "gem push #{path}"
-  next if system('gem', 'push', path)
+  loop do
+    puts "gem push #{path}"
+    break if system('gem', 'push', path)
 
-  exit($CHILD_STATUS&.exitstatus || 1)
+    status = $CHILD_STATUS&.exitstatus || 1
+    print "Push of #{package} failed. Retry? [Y/n] "
+    answer = $stdin.gets
+    exit(status) if answer.nil? || answer.strip.downcase.start_with?('n')
+  end
 end
